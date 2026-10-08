@@ -94,30 +94,6 @@ export const KeyboardShortcutIndicator: React.FC<KeyboardShortcutIndicatorProps>
                 <span>Copy</span>
               </button>
             )}
-
-            {/* Stash & Sneeze Reminder if Items are Held */}
-            {swallowedCount > 0 && (
-              <div className="hud-sneeze-pill">
-                <div className="flex items-center gap-0.5">
-                  <kbd className="hud-keycap-sm">Command + V</kbd>
-                  <span className="hud-key-divider-sm">/</span>
-                  <kbd className="hud-keycap-sm">Ctrl + V</kbd>
-                </div>
-                {onSneeze ? (
-                  <button
-                    type="button"
-                    className="hover:text-emerald-200 transition-colors flex items-center gap-1 underline decoration-emerald-500/40 text-emerald-300"
-                    onClick={onSneeze}
-                    title="Click or press Command + V / Ctrl + V to return stored text"
-                  >
-                    <Wind className="w-3 h-3" />
-                    <span>sneeze ({swallowedCount})</span>
-                  </button>
-                ) : (
-                  <span>sneeze ({swallowedCount})</span>
-                )}
-              </div>
-            )}
           </>
         ) : (
           /* ── 2. After Swallow: Teach Command + V / Ctrl + V Sneeze Back ── */

@@ -6,61 +6,43 @@ interface IslandParticlesProps {
   cornerRadius: number;
   status: "idle" | "ready" | "ingesting" | "satisfied" | "sneezing";
   isExpanded?: boolean;
+  sneezeCount?: number;
+  sneezeWindupText?: string | null;
 }
 
-// ── Coucou-Inspired Curated Palettes ──
-// Sucking in (Ingest): Warm electric yellows and golden sparks
-const INGEST_COLORS = [
-  "#FEF08A", // Light yellow highlight
-  "#FACC15", // Rich amber gold
-  "#FDE047", // Vivid electric yellow
-  "#F59E0B", // Deep warm gold
-  "#FFFBEB", // Pure shimmer white-gold
-];
+// ── Curated Color Palettes ──
+// Ingesting (sucking in text): Warm electric yellows & golds
+const INGEST_COLORS = ["#FACC15", "#FEF08A", "#FDE047"];
 
-// Sneezing: Vibrant emerald, neon mint, and lime spray
-const SNEEZE_COLORS = [
-  "#34D399", // Neon mint
-  "#22C55E", // Emerald green
-  "#4ADE80", // Vibrant bright green
-  "#86EFAC", // Light mint sparkle
-  "#10B981", // Deep jade
-  "#ECFDF5", // Sparkling mist white-green
-];
+// Sneezing (reverse outward blow): Fresh vibrant emerald & mint greens
+const SNEEZE_COLORS = ["#34D399", "#22C55E", "#4ADE80", "#10B981"];
 
 interface IngestParticle {
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  speed: number;
-  size: number;
-  alpha: number;
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
+  curveAmount: number;
+  startTime: number;
+  duration: number;
+  radius: number;
   color: string;
-  isStreak: boolean;
-  age: number;
-  maxLife: number;
-  jitterPhase: number;
-  jitterFreq: number;
 }
 
 interface SneezeParticle {
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  size: number;
-  alpha: number;
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
+  curveAmount: number;
+  startTime: number;
+  duration: number;
+  radius: number;
   color: string;
-  isStreak: boolean;
-  age: number;
-  maxLife: number;
 }
 
 /**
- * Universal continuous pill/capsule clipping path (Coucou rr() geometry)
+ * Universal continuous pill/capsule clipping path
  */
 function clipCapsule(
   ctx: CanvasRenderingContext2D,
@@ -79,11 +61,12 @@ function clipCapsule(
 }
 
 /**
- * Procedural Island Particle Engine (Coucou & Apple Dynamic Island)
- * - Ingesting: Yellow particles stream from the perimeter inwards toward Tusky
- * - Sneezing: Green particles burst from Tusky outwards toward the edges
- * - Strict Capsule Boundary Clipping: 100% contained within the Dynamic Island
- * - High-DPI Retina Sharpness with 0% idle CPU overhead
+ * Subtle Procedural Island Particle Engine
+ * - Ingesting: 16 round yellow dots stream inward from the capsule edges to Tusky.
+ *   Starts at 75% opacity and smoothly dims to 0 at Tusky.
+ * - Sneezing: 16 round green dots burst outward from Tusky across the island toward the edges.
+ *   Starts at 75% opacity and smoothly dims to 0 as they disperse.
+ * - Snappy, lightweight, pure canvas, zero dependencies, zero lingering.
  */
 export const IslandParticles: React.FC<IslandParticlesProps> = ({
   width,
@@ -91,80 +74,160 @@ export const IslandParticles: React.FC<IslandParticlesProps> = ({
   cornerRadius,
   status,
   isExpanded = false,
+  sneezeCount = 0,
+  sneezeWindupText = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ingestParticlesRef = useRef<IngestParticle[]>([]);
   const sneezeParticlesRef = useRef<SneezeParticle[]>([]);
   const animFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(performance.now());
-  const statusRef = useRef(status);
-  statusRef.current = status;
+  const sneezeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sneezeTriggeredRef = useRef(false);
 
-  // Track sneeze burst trigger
+  // Keep references to latest geometry so the RAF loop doesn't restart on every spring frame
+  const widthRef = useRef(width);
+  widthRef.current = width;
+
+  const heightRef = useRef(height);
+  heightRef.current = height;
+
+  const cornerRadiusRef = useRef(cornerRadius);
+  cornerRadiusRef.current = cornerRadius;
+
+  const isExpandedRef = useRef(isExpanded);
+  isExpandedRef.current = isExpanded;
+
   const prevStatusRef = useRef(status);
+  const prevSneezeCountRef = useRef(sneezeCount);
 
-  useEffect(() => {
-    // Sneeze impulse trigger: When transitioning into "sneezing", spawn explosive initial burst
-    if (status === "sneezing") {
-      const mascotX = isExpanded ? 44 : 32;
-      const mascotY = height / 2;
-      const burstCount = 65;
+  // ── Spawn Helpers ──
+  const spawnIngest = (now: number) => {
+    const w = widthRef.current;
+    const h = heightRef.current;
+    const r = cornerRadiusRef.current;
+    const capR = Math.max(0, Math.min(r, h / 2, w / 2));
+    const mascotX = isExpandedRef.current ? 44 : 30;
+    const mascotY = h / 2;
 
-      const newSneezeParticles: SneezeParticle[] = [];
-      for (let i = 0; i < burstCount; i++) {
-        // Broad forward spray angle (fanning out across the island)
-        const angle =
-          (Math.random() - 0.5) * 2.4 + (Math.random() > 0.85 ? Math.PI : 0);
-        const speed = 150 + Math.random() * 300;
-        const color =
-          SNEEZE_COLORS[Math.floor(Math.random() * SNEEZE_COLORS.length)];
-        const isStreak = Math.random() > 0.35;
+    const count = 16;
+    const particles: IngestParticle[] = [];
 
-        newSneezeParticles.push({
-          x: mascotX + (Math.random() - 0.5) * 6,
-          y: mascotY + (Math.random() - 0.5) * 6,
-          prevX: mascotX,
-          prevY: mascotY,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: isStreak ? 1.6 + Math.random() * 1.4 : 1.4 + Math.random() * 2.4,
-          alpha: 0.95,
-          color,
-          isStreak,
-          age: 0,
-          maxLife: 0.65 + Math.random() * 0.55,
-        });
+    for (let i = 0; i < count; i++) {
+      let startX = 0;
+      let startY = 0;
+
+      // Distribute along edges
+      const edge = Math.random();
+      if (edge < 0.35) {
+        // Top edge
+        startX = capR + Math.random() * Math.max(10, w - 2 * capR);
+        startY = 2;
+      } else if (edge < 0.70) {
+        // Bottom edge
+        startX = capR + Math.random() * Math.max(10, w - 2 * capR);
+        startY = h - 2;
+      } else if (edge < 0.90) {
+        // Right cap
+        const ang = (Math.random() - 0.5) * Math.PI;
+        startX = w - capR + Math.cos(ang) * (capR - 2);
+        startY = h / 2 + Math.sin(ang) * (capR - 2);
+      } else {
+        // Left cap (behind mascot)
+        const ang = Math.PI / 2 + Math.random() * Math.PI;
+        startX = capR + Math.cos(ang) * (capR - 2);
+        startY = h / 2 + Math.sin(ang) * (capR - 2);
       }
-      sneezeParticlesRef.current = [
-        ...sneezeParticlesRef.current,
-        ...newSneezeParticles,
-      ];
+
+      const duration = 460 + Math.random() * 80; // 460-540ms fast flight
+      const stagger = i * 20; // 0-300ms gentle stagger
+      const curveAmount = (Math.random() - 0.5) * 8; // subtle curvature
+      const radius = 1.7 + Math.random() * 0.5; // subtle 1.7-2.2px round dot
+      const color = INGEST_COLORS[Math.floor(Math.random() * INGEST_COLORS.length)];
+
+      particles.push({
+        startX,
+        startY,
+        targetX: mascotX,
+        targetY: mascotY,
+        curveAmount,
+        startTime: now + stagger,
+        duration,
+        radius,
+        color,
+      });
     }
 
-    prevStatusRef.current = status;
-  }, [status, isExpanded, height]);
+    ingestParticlesRef.current = particles;
+  };
 
-  // Main Particle Physics & Rendering Loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const spawnSneeze = (now: number) => {
+    const w = widthRef.current;
+    const h = heightRef.current;
+    const mascotX = isExpandedRef.current ? 44 : 30;
+    const mascotY = h / 2;
 
-    let isRunning = true;
+    const count = 16;
+    const particles: SneezeParticle[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const startX = mascotX + (Math.random() - 0.5) * 4;
+      const startY = mascotY + (Math.random() - 0.5) * 4;
+
+      // Fan outward across the capsule length to the right
+      // Target positions distributed across the rightward interior of the island
+      const maxAvailableX = Math.max(mascotX + 40, w - 16);
+      const targetDistX = 35 + Math.random() * (maxAvailableX - mascotX);
+      const targetX = Math.min(w - 12, startX + targetDistX);
+
+      // Target Y stays comfortably inside the capsule height (e.g. 5px to h-5px)
+      const verticalPadding = 6;
+      const targetY =
+        verticalPadding + Math.random() * Math.max(10, h - 2 * verticalPadding);
+
+      const duration = 440 + Math.random() * 70; // 440-510ms fast burst
+      const stagger = Math.random() * 35; // crisp instant explosion
+      const curveAmount = (Math.random() - 0.5) * 6; // gentle organic drift
+      const radius = 1.8 + Math.random() * 0.5; // subtle 1.8-2.3px round dot
+      const color = SNEEZE_COLORS[Math.floor(Math.random() * SNEEZE_COLORS.length)];
+
+      particles.push({
+        startX,
+        startY,
+        targetX,
+        targetY,
+        curveAmount,
+        startTime: now + stagger,
+        duration,
+        radius,
+        color,
+      });
+    }
+
+    sneezeParticlesRef.current = particles;
+  };
+
+  // ── Animation Loop ──
+  const startLoop = () => {
+    if (animFrameRef.current !== null) return;
 
     const render = (now: number) => {
-      if (!isRunning) return;
-
-      const dt = Math.min((now - lastTimeRef.current) / 1000, 0.033);
-      lastTimeRef.current = now;
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        animFrameRef.current = null;
+        return;
+      }
 
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      if (!ctx) {
+        animFrameRef.current = null;
+        return;
+      }
 
+      const w = widthRef.current;
+      const h = heightRef.current;
+      const r = cornerRadiusRef.current;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = width;
-      const h = height;
 
-      // Ensure canvas pixel backing store matches container dimensions
       const targetPxW = Math.round(w * dpr);
       const targetPxH = Math.round(h * dpr);
       if (canvas.width !== targetPxW || canvas.height !== targetPxH) {
@@ -176,270 +239,177 @@ export const IslandParticles: React.FC<IslandParticlesProps> = ({
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
-      // ── Strict Capsule Clipping Boundary ──
-      clipCapsule(ctx, w, h, cornerRadius);
+      clipCapsule(ctx, w, h, r);
       ctx.clip();
 
-      const mascotX = isExpanded ? 44 : 32;
-      const mascotY = h / 2;
-
-      // ─────────────────────────────────────────────────────────────
-      // 1. INGEST PARTICLES (Yellow: Edges -> Mascot)
-      // ─────────────────────────────────────────────────────────────
-      if (statusRef.current === "ingesting") {
-        // Continuous spawn rate while ingesting (~4 to 7 particles per frame)
-        const spawnCount = 5;
-        for (let i = 0; i < spawnCount; i++) {
-          let spawnX = 0;
-          let spawnY = 0;
-
-          // Pick a random edge location along the perimeter
-          const edge = Math.random();
-          if (edge < 0.35) {
-            // Top edge
-            spawnX = Math.random() * w;
-            spawnY = Math.random() * 3;
-          } else if (edge < 0.70) {
-            // Bottom edge
-            spawnX = Math.random() * w;
-            spawnY = h - Math.random() * 3;
-          } else if (edge < 0.90) {
-            // Right pill curve/edge
-            spawnX = w - Math.random() * 5;
-            spawnY = Math.random() * h;
-          } else {
-            // Far left edge (behind mascot)
-            spawnX = Math.random() * 8;
-            spawnY = Math.random() * h;
-          }
-
-          const color =
-            INGEST_COLORS[Math.floor(Math.random() * INGEST_COLORS.length)];
-          const isStreak = Math.random() > 0.3;
-
-          ingestParticlesRef.current.push({
-            x: spawnX,
-            y: spawnY,
-            prevX: spawnX,
-            prevY: spawnY,
-            speed: 130 + Math.random() * 190,
-            size: isStreak ? 1.4 + Math.random() * 1.0 : 1.0 + Math.random() * 2.0,
-            alpha: 0.1, // Fade in
-            color,
-            isStreak,
-            age: 0,
-            maxLife: 0.9 + Math.random() * 0.4,
-            jitterPhase: Math.random() * Math.PI * 2,
-            jitterFreq: 6 + Math.random() * 8,
-          });
-        }
-      }
-
-      // Update and draw Ingest Particles
+      // 1. Ingest Particles (Yellow, edges -> mascot)
+      let activeIngest = 0;
       const nextIngest: IngestParticle[] = [];
       for (const p of ingestParticlesRef.current) {
-        p.age += dt;
-        p.prevX = p.x;
-        p.prevY = p.y;
-
-        const dx = mascotX - p.x;
-        const dy = mascotY - p.y;
-        const dist = Math.hypot(dx, dy);
-
-        // Disappear if sucked into mascot's mouth / center
-        if (dist < 7 || p.age >= p.maxLife) {
+        const tRaw = (now - p.startTime) / p.duration;
+        if (tRaw < 0) {
+          nextIngest.push(p);
+          activeIngest++;
           continue;
         }
-
-        // Acceleration toward mascot: vacuum suction speeds up as particles get closer
-        const suctionMult = 1 + Math.max(0, 1 - dist / (w * 0.75)) * 1.8;
-        const moveDist = p.speed * suctionMult * dt;
-
-        const ux = dx / dist;
-        const uy = dy / dist;
-
-        // Subtle lateral sinusoidal jitter for organic fluid suction
-        const perpX = -uy;
-        const perpY = ux;
-        const jitter =
-          Math.sin(p.age * p.jitterFreq + p.jitterPhase) * (dist > 30 ? 1.2 : 0.4);
-
-        p.x += ux * moveDist + perpX * jitter;
-        p.y += uy * moveDist + perpY * jitter;
-
-        // Fade in quickly, remain bright, then fade out upon arrival at mascot
-        const lifeFraction = p.age / p.maxLife;
-        let alpha = p.alpha;
-        if (lifeFraction < 0.15) {
-          alpha = lifeFraction / 0.15;
-        } else if (dist < 28) {
-          alpha = Math.max(0, dist / 28);
-        } else {
-          alpha = 0.92;
+        if (tRaw >= 1) {
+          continue; // arrived at Tusky, fully dimmed
         }
-        p.alpha = alpha;
 
-        // Draw Ingest Particle
+        activeIngest++;
+        const progress = Math.pow(tRaw, 1.3);
+        const dx = p.targetX - p.startX;
+        const dy = p.targetY - p.startY;
+        const currX = p.startX + dx * progress;
+        const currY = p.startY + dy * progress;
+
+        const dist = Math.hypot(dx, dy);
+        const perpX = -dy / (dist || 1);
+        const perpY = dx / (dist || 1);
+        const arc = Math.sin(tRaw * Math.PI) * p.curveAmount;
+        const x = currX + perpX * arc;
+        const y = currY + perpY * arc;
+
+        // Opacity: starts at 75% (0.75) from the edges, slowly dims to 0 at mascot
+        const opacity = Math.max(0, 0.75 * (1 - tRaw));
+
         ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
-
-        if (p.isStreak) {
-          // Directional Speed Streak pointing toward Tusky
-          const streakLen = Math.min(16, Math.max(5, moveDist * 2.2));
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = p.size;
-          ctx.lineCap = "round";
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 4;
-
-          ctx.beginPath();
-          ctx.moveTo(p.x - ux * streakLen, p.y - uy * streakLen);
-          ctx.lineTo(p.x, p.y);
-          ctx.stroke();
-        } else {
-          // Shimmering Golden Dust Dot / Sparkle
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 3;
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
+
         nextIngest.push(p);
       }
       ingestParticlesRef.current = nextIngest;
 
-      // ─────────────────────────────────────────────────────────────
-      // 2. SNEEZE PARTICLES (Green: Mascot -> Outward Edges)
-      // ─────────────────────────────────────────────────────────────
-      if (statusRef.current === "sneezing") {
-        // Continuous secondary sneeze mist while sneeze is active
-        const mistCount = 5;
-        for (let i = 0; i < mistCount; i++) {
-          const angle =
-            (Math.random() - 0.5) * 2.4 + (Math.random() > 0.85 ? Math.PI : 0);
-          const speed = 130 + Math.random() * 260;
-          const color =
-            SNEEZE_COLORS[Math.floor(Math.random() * SNEEZE_COLORS.length)];
-          const isStreak = Math.random() > 0.35;
-
-          sneezeParticlesRef.current.push({
-            x: mascotX + (Math.random() - 0.5) * 6,
-            y: mascotY + (Math.random() - 0.5) * 6,
-            prevX: mascotX,
-            prevY: mascotY,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            size: isStreak ? 1.6 + Math.random() * 1.4 : 1.3 + Math.random() * 2.4,
-            alpha: 0.95,
-            color,
-            isStreak,
-            age: 0,
-            maxLife: 0.6 + Math.random() * 0.5,
-          });
-        }
-      }
-
-      // Update and draw Sneeze Particles
+      // 2. Sneeze Particles (Green, mascot -> outward edges)
+      let activeSneeze = 0;
       const nextSneeze: SneezeParticle[] = [];
       for (const p of sneezeParticlesRef.current) {
-        p.age += dt;
-        p.prevX = p.x;
-        p.prevY = p.y;
-
-        // Aerodynamic deceleration (air resistance)
-        p.vx *= 0.95;
-        p.vy *= 0.95;
-
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-
-        if (p.age >= p.maxLife) {
+        const tRaw = (now - p.startTime) / p.duration;
+        if (tRaw < 0) {
+          nextSneeze.push(p);
+          activeSneeze++;
           continue;
         }
-
-        // Fade out as life expires or as it reaches edges
-        const lifeFraction = p.age / p.maxLife;
-        p.alpha = Math.max(0, 1 - lifeFraction);
-
-        // Draw Sneeze Particle
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
-
-        if (p.isStreak) {
-          // Outward blast streak oriented along velocity vector
-          const vel = Math.hypot(p.vx, p.vy);
-          const ux = vel > 0 ? p.vx / vel : 1;
-          const uy = vel > 0 ? p.vy / vel : 0;
-          const streakLen = Math.min(24, Math.max(5, vel * 0.07));
-
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = p.size;
-          ctx.lineCap = "round";
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 6;
-
-          ctx.beginPath();
-          ctx.moveTo(p.x - ux * streakLen, p.y - uy * streakLen);
-          ctx.lineTo(p.x, p.y);
-          ctx.stroke();
-        } else {
-          // Glowing Green Mist Droplet / Sparkle
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 4;
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
+        if (tRaw >= 1) {
+          continue; // reached outer edge, fully dimmed
         }
 
+        activeSneeze++;
+        // Decelerating outward burst
+        const progress = 1 - Math.pow(1 - tRaw, 2.0);
+        const dx = p.targetX - p.startX;
+        const dy = p.targetY - p.startY;
+        const currX = p.startX + dx * progress;
+        const currY = p.startY + dy * progress;
+
+        const dist = Math.hypot(dx, dy);
+        const perpX = -dy / (dist || 1);
+        const perpY = dx / (dist || 1);
+        const arc = Math.sin(tRaw * Math.PI) * p.curveAmount;
+        const x = currX + perpX * arc;
+        const y = currY + perpY * arc;
+
+        // Opacity: starts at 75% (0.75) at mascot, slowly dims to 0 at outer bounds
+        const opacity = Math.max(0, 0.75 * (1 - tRaw));
+
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
+
         nextSneeze.push(p);
       }
       sneezeParticlesRef.current = nextSneeze;
 
       ctx.restore();
 
-      // Continue animating if status is active OR there are still live in-flight particles
-      if (
-        statusRef.current === "ingesting" ||
-        statusRef.current === "sneezing" ||
-        ingestParticlesRef.current.length > 0 ||
-        sneezeParticlesRef.current.length > 0
-      ) {
+      if (activeIngest > 0 || activeSneeze > 0) {
         animFrameRef.current = requestAnimationFrame(render);
       } else {
-        // Idling: clear canvas completely to free memory and suspend loop
         ctx.clearRect(0, 0, w, h);
         animFrameRef.current = null;
       }
     };
 
-    // Trigger or continue animation loop if active
-    if (
-      status === "ingesting" ||
-      status === "sneezing" ||
-      ingestParticlesRef.current.length > 0 ||
-      sneezeParticlesRef.current.length > 0
-    ) {
-      lastTimeRef.current = performance.now();
-      if (!animFrameRef.current) {
-        animFrameRef.current = requestAnimationFrame(render);
+    animFrameRef.current = requestAnimationFrame(render);
+  };
+
+  // ── Trigger Listeners ──
+  useEffect(() => {
+    // 1. Ingest Trigger
+    if (status === "ingesting" && prevStatusRef.current !== "ingesting") {
+      spawnIngest(performance.now());
+      startLoop();
+    }
+
+    // 2. Sneeze Reset on New Sneeze Count
+    if (sneezeCount !== prevSneezeCountRef.current) {
+      sneezeTriggeredRef.current = false;
+      if (sneezeTimerRef.current) {
+        clearTimeout(sneezeTimerRef.current);
+        sneezeTimerRef.current = null;
       }
     }
 
+    // 3. Sneeze Trigger
+    if (status === "sneezing") {
+      if (!sneezeTriggeredRef.current) {
+        if (sneezeWindupText === "Acchooo! 💨") {
+          // Windup completed, burst immediately
+          sneezeTriggeredRef.current = true;
+          if (sneezeTimerRef.current) {
+            clearTimeout(sneezeTimerRef.current);
+            sneezeTimerRef.current = null;
+          }
+          spawnSneeze(performance.now());
+          startLoop();
+        } else if (!sneezeTimerRef.current) {
+          // Windup in progress, schedule recoil burst at 350ms
+          sneezeTimerRef.current = setTimeout(() => {
+            sneezeTriggeredRef.current = true;
+            sneezeTimerRef.current = null;
+            spawnSneeze(performance.now());
+            startLoop();
+          }, 350);
+        }
+      }
+    } else {
+      sneezeTriggeredRef.current = false;
+      if (sneezeTimerRef.current) {
+        clearTimeout(sneezeTimerRef.current);
+        sneezeTimerRef.current = null;
+      }
+    }
+
+    prevStatusRef.current = status;
+    prevSneezeCountRef.current = sneezeCount;
+  }, [status, sneezeCount, sneezeWindupText]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      isRunning = false;
-      if (animFrameRef.current) {
+      if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = null;
       }
+      if (sneezeTimerRef.current !== null) {
+        clearTimeout(sneezeTimerRef.current);
+        sneezeTimerRef.current = null;
+      }
     };
-  }, [width, height, cornerRadius, status, isExpanded]);
+  }, []);
 
   return (
     <canvas

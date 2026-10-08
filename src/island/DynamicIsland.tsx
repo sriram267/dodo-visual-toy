@@ -401,6 +401,8 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
           cornerRadius={cornerRadius}
           status={status}
           isExpanded={isExpanded}
+          sneezeCount={sneezeCount}
+          sneezeWindupText={sneezeWindupText}
         />
 
         {/* ── NOTCH MODE (184x40) / EXPRESSION BANNERS ── */}
