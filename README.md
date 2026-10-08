@@ -4,6 +4,10 @@ A tiny interactive visual toy built for the **Dodo Payments** design engineer as
 
 👉 **[Live Demo: sriram267.github.io/dodo-visual-toy](https://sriram267.github.io/dodo-visual-toy/)**
 
+<p align="center">
+  <img src="./public/preview.png" alt="Tusky: The Dynamic Island Text Eater Preview" width="100%" />
+</p>
+
 ---
 
 ## What It Is
