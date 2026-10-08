@@ -1,84 +1,69 @@
-# Tusky: The Dynamic Island Text Eater
+# Tusky: Dynamic Island Text Eater
 
-A tiny interactive visual toy built for the **Dodo Payments** design engineer assignment.
+A visual toy built for the Dodo Payments design engineer assignment.
 
-👉 **[Live Demo: sriram267.github.io/dodo-visual-toy](https://sriram267.github.io/dodo-visual-toy/)**
+[Live Demo](https://sriram267.github.io/dodo-visual-toy/)
 
 <p align="center">
-  <img src="./public/preview.png" alt="Tusky: The Dynamic Island Text Eater Preview" width="100%" />
+  <img src="./public/preview.png" alt="Tusky preview" width="100%" />
 </p>
 
----
+## Overview
 
-## What It Is
+Tusky is an elephant living in a Dynamic Island at the top of the screen.
 
-Tusky is an articulated elephant mascot living in an Apple-style Dynamic Island at the top of the viewport.
-- **Select text on the page**: Tusky perks up and lowers his trunk to wait.
-- **Press `Command + C` / `Ctrl + C`**: Aerodynamic streamlines suck the words into the island with a vacuum whoosh and a physical gulp.
-- **Press `Command + V` / `Ctrl + V`**: Tusky winds up with an *"Acchooo!"* and sneezes the words back into the exact spot they came from.
-- **Click Tusky**: He has feelings — click once for a warning, twice and he gets annoyed, three times and he gets dizzy with cartoon spiral eyes.
-- **Click the Notch**: Expands into the Trunk Stash with stored snippets and quick-sneeze triggers.
-- **Procedural Web Audio**: 100% synthesized in real time via the Web Audio API with zero external sound files.
+- **Copy text (`⌘C` / `Ctrl+C`)**: Select any text on the page and copy it. The text animates up into the island with a whoosh sound.
+- **Paste text (`⌘V` / `Ctrl+V`)**: Tusky sneezes the copied text back down into its original place on the page. If the stash is empty, he gives a short sniffle instead.
+- **Poke Tusky**: Clicking the mascot cycles through reactions (warning, annoyed, dizzy).
+- **Trunk Stash**: Clicking the island expands it to show recently copied text snippets, with buttons to sneeze them individually.
+- **Synthesized Audio**: Sound effects are generated in the browser using the Web Audio API without external audio files.
 
----
-
-## Getting Started
+## Local Setup
 
 ### Prerequisites
-- Node.js (v18+)
-- npm or pnpm
+- Node.js (v18 or higher)
+- npm
 
-### Installation & Run
+### Run Locally
 
 ```bash
+# Clone the repository
+git clone https://github.com/sriram267/dodo-visual-toy.git
+cd dodo-visual-toy
+
 # Install dependencies
 npm install
 
-# Start local dev server (http://localhost:5173)
+# Start the dev server
 npm run dev
 
 # Build for production
 npm run build
 ```
 
----
+## How It's Built
+
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: CSS with custom layout math for continuous pill curves
+- **Animation**: Custom spring loops and requestAnimationFrame for 60fps text flight
+- **Audio**: Web Audio API (oscillators, pink noise buffers, and formant filters)
 
 ## Project Structure
 
 ```
-dodo-visual-toy/
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── public/
-│   └── favicon.svg
-└── src/
-    ├── main.tsx
-    ├── App.tsx
-    ├── App.css
-    ├── index.css
-    ├── core/
-    │   ├── layout.ts       # Capsule metrics (notch & expanded dimensions)
-    │   ├── anim.ts         # Spring interpolation physics
-    │   └── soundEngine.ts  # Procedural audio synthesizer (Web Audio API)
-    ├── island/
-    │   ├── DynamicIsland.tsx  # Dynamic Island host & stash
-    │   ├── DynamicIsland.css  # Island animations & keyframes
-    │   ├── TuskyAnchor.tsx    # Articulated SVG mascot rig
-    │   └── IslandShape.tsx    # Procedural continuous capsule SVG shell
-    ├── components/
-    │   ├── EditorialEssay.tsx # Editorial story & context
-    │   ├── SwallowOverlay.tsx # Hardware-accelerated text funnel overlay
-    │   └── KeyboardShortcutIndicator.tsx # Glassmorphic shortcut HUD
-    └── hooks/
-        └── useSwallowText.ts  # Selection extraction, funnel physics & sneeze stack
+src/
+├── core/
+│   ├── layout.ts        # Island dimensions and positions
+│   ├── anim.ts          # Spring physics helper
+│   └── soundEngine.ts   # Web Audio synthesizers (whoosh, gulp, sneeze)
+├── island/
+│   ├── DynamicIsland.tsx # Island pill container and stash drawer
+│   ├── IslandShape.tsx   # SVG path for the capsule curve
+│   └── TuskyAnchor.tsx   # SVG elephant mascot and animations
+├── components/
+│   ├── EditorialEssay.tsx # Sample article text for copying
+│   ├── SwallowOverlay.tsx # Floating text animation layer
+│   └── KeyboardShortcutIndicator.tsx # Floating shortcut hint
+└── hooks/
+    └── useSwallowText.ts  # Copy/paste listeners and flight paths
 ```
-
----
-
-## Tech Stack
-- **Framework**: React 19 + TypeScript
-- **Bundler**: Vite
-- **Icons**: Lucide React
-- **Audio**: Web Audio API (Synthesizers & procedural noise)
