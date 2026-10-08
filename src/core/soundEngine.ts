@@ -282,8 +282,11 @@ class SoundEngine {
   }
 
   /**
-   * 3. SNEEZE INHALE WINDUP (0ms - 380ms)
-   * Rising breath suction noise as Tusky draws back and backend/trunk swells.
+   * 3. SNEEZE INHALE WINDUP ("Ah... ah...")
+   * Authentic physiological pre-sneeze intake:
+   * - Two-stage vocal tract formant intake (throat contracts: pitch rises 200Hz -> 380Hz)
+   * - Breath suction noise through vocal cavity formants (650Hz -> 1400Hz)
+   * - Glottal catch (sudden silent breath hold at 340ms-380ms right before explosive release)
    */
   public playSneezeWindup(durationMs = 380): void {
     if (this.isMutedState) return;
@@ -293,35 +296,69 @@ class SoundEngine {
     const now = ctx.currentTime;
     const duration = durationMs / 1000;
 
+    // --- Layer A: Vocalized Throat Tension ("Ah... ah-") ---
+    const vocalOsc = ctx.createOscillator();
+    vocalOsc.type = "triangle";
+    vocalOsc.frequency.setValueAtTime(210, now);
+    vocalOsc.frequency.exponentialRampToValueAtTime(380, now + duration * 0.85);
+
+    // Formant filter for open throat "Ah" vowel (~720Hz -> 960Hz)
+    const vocalFilter = ctx.createBiquadFilter();
+    vocalFilter.type = "bandpass";
+    vocalFilter.Q.setValueAtTime(3.8, now);
+    vocalFilter.frequency.setValueAtTime(680, now);
+    vocalFilter.frequency.exponentialRampToValueAtTime(980, now + duration * 0.85);
+
+    const vocalGain = ctx.createGain();
+    vocalGain.gain.setValueAtTime(0.0001, now);
+    // First breath intake (0% to 40%)
+    vocalGain.gain.linearRampToValueAtTime(0.20, now + duration * 0.35);
+    // Hesitation dip (40% to 55%)
+    vocalGain.gain.linearRampToValueAtTime(0.08, now + duration * 0.52);
+    // Second sharp intake gasp (55% to 85%)
+    vocalGain.gain.linearRampToValueAtTime(0.28, now + duration * 0.82);
+    // Glottal closure (breath-hold right before explosion)
+    vocalGain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.94);
+
+    vocalOsc.connect(vocalFilter);
+    vocalFilter.connect(vocalGain);
+    vocalGain.connect(this.masterGain);
+
+    // --- Layer B: Nasal / Air Inhale Turbulence ---
     const noiseSource = ctx.createBufferSource();
     noiseSource.buffer = this.pinkNoiseBuffer;
     noiseSource.loop = true;
 
-    const bpf = ctx.createBiquadFilter();
-    bpf.type = "bandpass";
-    bpf.Q.setValueAtTime(2.5, now);
-    bpf.frequency.setValueAtTime(180, now);
-    bpf.frequency.exponentialRampToValueAtTime(950, now + duration);
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = "bandpass";
+    noiseFilter.Q.setValueAtTime(2.6, now);
+    noiseFilter.frequency.setValueAtTime(420, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(1450, now + duration * 0.85);
 
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.65, now + duration * 0.85);
-    gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.26, now + duration * 0.35);
+    noiseGain.gain.linearRampToValueAtTime(0.12, now + duration * 0.52);
+    noiseGain.gain.linearRampToValueAtTime(0.42, now + duration * 0.82);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.94);
 
-    noiseSource.connect(bpf);
-    bpf.connect(gain);
-    gain.connect(this.masterGain);
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.masterGain);
 
+    vocalOsc.start(now);
     noiseSource.start(now);
-    noiseSource.stop(now + duration + 0.02);
+    vocalOsc.stop(now + duration);
+    noiseSource.stop(now + duration);
   }
 
   /**
-   * 4. SNEEZE EXPLOSIVE BLAST (380ms+)
-   * Tri-layer explosive burst:
-   * Layer A: High-frequency explosive sneeze transient (puff impulse)
-   * Layer B: Resonant downward wind expulsion rush (1600Hz -> 380Hz)
-   * Layer C: Low pachyderm body recoil thump (160Hz -> 45Hz)
+   * 4. SNEEZE EXPLOSIVE BLAST ("TCH-OOO! 💨")
+   * 4-Layer Authentic Sneeze Acoustics:
+   * Layer 1: "TCH" Affricate Consonant Snap (sharp palatal friction release at 4.2kHz, 25ms)
+   * Layer 2: "CH-OOO" Vocal Formant Core (descending vocal tract pitch 480Hz -> 190Hz through F1/F2 oral formants)
+   * Layer 3: High-Velocity Air Blast (dual resonant bandpass noise expulsion + mist sizzle)
+   * Layer 4: Recoil Chest Thump (deep sub-bass punch at 120Hz -> 38Hz)
    */
   public playSneezeBlast(): void {
     if (this.isMutedState) return;
@@ -330,104 +367,160 @@ class SoundEngine {
 
     const now = ctx.currentTime;
 
-    // Layer A: Sharp explosive puff impulse
-    const puffSource = ctx.createBufferSource();
-    puffSource.buffer = this.pinkNoiseBuffer;
-    puffSource.loop = true;
+    // ── Layer 1: Sharp "TCH" Consonant Occlusion Snap (0ms - 40ms) ──
+    // The crisp phonetic release that makes the brain instantly recognize "ACHOO!"
+    const tchNoise = ctx.createBufferSource();
+    tchNoise.buffer = this.pinkNoiseBuffer;
+    tchNoise.loop = true;
 
-    const hpf = ctx.createBiquadFilter();
-    hpf.type = "highpass";
-    hpf.frequency.setValueAtTime(1100, now);
+    const tchFilter = ctx.createBiquadFilter();
+    tchFilter.type = "bandpass";
+    tchFilter.Q.setValueAtTime(2.2, now);
+    tchFilter.frequency.setValueAtTime(4200, now);
 
-    const puffGain = ctx.createGain();
-    puffGain.gain.setValueAtTime(0.0001, now);
-    puffGain.gain.linearRampToValueAtTime(0.9, now + 0.006);
-    puffGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    const tchGain = ctx.createGain();
+    tchGain.gain.setValueAtTime(0.0001, now);
+    tchGain.gain.linearRampToValueAtTime(0.95, now + 0.002); // 2ms explosive attack
+    tchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
 
-    puffSource.connect(hpf);
-    hpf.connect(puffGain);
-    puffGain.connect(this.masterGain);
+    tchNoise.connect(tchFilter);
+    tchFilter.connect(tchGain);
+    tchGain.connect(this.masterGain);
 
-    // Layer B: Resonant downward air cloud rush
-    const rushSource = ctx.createBufferSource();
-    rushSource.buffer = this.pinkNoiseBuffer;
-    rushSource.loop = true;
+    tchNoise.start(now);
+    tchNoise.stop(now + 0.05);
 
-    const rushFilter = ctx.createBiquadFilter();
-    rushFilter.type = "bandpass";
-    rushFilter.Q.setValueAtTime(3.2, now);
-    rushFilter.frequency.setValueAtTime(1700, now);
-    rushFilter.frequency.exponentialRampToValueAtTime(360, now + 0.32);
+    // ── Layer 2: Vocalized "CH-OOO" Resonant Vowel Core (0ms - 220ms) ──
+    // The vocal fold blast sliding rapidly downward in pitch from 480Hz -> 180Hz
+    const vocalOsc = ctx.createOscillator();
+    vocalOsc.type = "sawtooth";
+    vocalOsc.frequency.setValueAtTime(480, now);
+    vocalOsc.frequency.exponentialRampToValueAtTime(180, now + 0.17);
 
-    const rushGain = ctx.createGain();
-    rushGain.gain.setValueAtTime(0.0001, now);
-    rushGain.gain.linearRampToValueAtTime(0.75, now + 0.02);
-    rushGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+    // Oral vowel formant ("oo" vowel ~420Hz)
+    const f1Filter = ctx.createBiquadFilter();
+    f1Filter.type = "bandpass";
+    f1Filter.Q.setValueAtTime(3.8, now);
+    f1Filter.frequency.setValueAtTime(540, now);
+    f1Filter.frequency.exponentialRampToValueAtTime(360, now + 0.17);
 
-    rushSource.connect(rushFilter);
-    rushFilter.connect(rushGain);
-    rushGain.connect(this.masterGain);
+    // Nasal/trunk resonance formant (~1050Hz -> 720Hz)
+    const f2Filter = ctx.createBiquadFilter();
+    f2Filter.type = "bandpass";
+    f2Filter.Q.setValueAtTime(3.2, now);
+    f2Filter.frequency.setValueAtTime(1150, now);
+    f2Filter.frequency.exponentialRampToValueAtTime(750, now + 0.17);
 
-    // Layer C: Low body recoil thud
-    const thudOsc = ctx.createOscillator();
-    thudOsc.type = "sine";
-    thudOsc.frequency.setValueAtTime(160, now);
-    thudOsc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+    const vocalGain = ctx.createGain();
+    vocalGain.gain.setValueAtTime(0.0001, now);
+    vocalGain.gain.linearRampToValueAtTime(0.55, now + 0.006);
+    vocalGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
-    const thudGain = ctx.createGain();
-    thudGain.gain.setValueAtTime(0.0001, now);
-    thudGain.gain.linearRampToValueAtTime(0.42, now + 0.005);
-    thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    vocalOsc.connect(f1Filter);
+    vocalOsc.connect(f2Filter);
+    f1Filter.connect(vocalGain);
+    f2Filter.connect(vocalGain);
+    vocalGain.connect(this.masterGain);
 
-    thudOsc.connect(thudGain);
-    thudGain.connect(this.masterGain);
+    vocalOsc.start(now);
+    vocalOsc.stop(now + 0.24);
 
-    // Fire all three layers
-    puffSource.start(now);
-    rushSource.start(now);
-    thudOsc.start(now);
+    // ── Layer 3: Turbulent Air Blast & Droplet Gust (0ms - 320ms) ──
+    // High-pressure rush of expelled air down the trunk
+    const airNoise = ctx.createBufferSource();
+    airNoise.buffer = this.pinkNoiseBuffer;
+    airNoise.loop = true;
 
-    puffSource.stop(now + 0.16);
-    rushSource.stop(now + 0.38);
-    thudOsc.stop(now + 0.18);
+    const airFilter = ctx.createBiquadFilter();
+    airFilter.type = "bandpass";
+    airFilter.Q.setValueAtTime(2.2, now);
+    airFilter.frequency.setValueAtTime(2400, now);
+    airFilter.frequency.exponentialRampToValueAtTime(380, now + 0.25);
+
+    const airGain = ctx.createGain();
+    airGain.gain.setValueAtTime(0.0001, now);
+    airGain.gain.linearRampToValueAtTime(0.85, now + 0.005);
+    airGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+    airNoise.connect(airFilter);
+    airFilter.connect(airGain);
+    airGain.connect(this.masterGain);
+
+    airNoise.start(now);
+    airNoise.stop(now + 0.30);
+
+    // ── Layer 4: Pachyderm Torso Recoil Thump (0ms - 150ms) ──
+    // Sub-bass chest punch giving visceral physical weight to the sneeze
+    const thumpOsc = ctx.createOscillator();
+    thumpOsc.type = "sine";
+    thumpOsc.frequency.setValueAtTime(140, now);
+    thumpOsc.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+
+    const thumpGain = ctx.createGain();
+    thumpGain.gain.setValueAtTime(0.0001, now);
+    thumpGain.gain.linearRampToValueAtTime(0.5, now + 0.003);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+    thumpOsc.connect(thumpGain);
+    thumpGain.connect(this.masterGain);
+
+    thumpOsc.start(now);
+    thumpOsc.stop(now + 0.16);
   }
 
   /**
-   * 5. DRY SNIFFLE (Empty Stash Sneeze)
-   * Two delicate, cute mini-sniffle puffs when user triggers ⌘V with empty trunk.
+   * 5. DRY SNIFFLE (Empty Stash Sneeze Attempt)
+   * Cute, unmistakable double-sniffle ("sniff... sniff!") when trunk is empty.
    */
   public playDrySniffle(): void {
     if (this.isMutedState) return;
     const ctx = this.getContext();
     if (!ctx || !this.masterGain || !this.pinkNoiseBuffer) return;
 
-    const playPuff = (startTime: number) => {
+    const playSniff = (startTime: number) => {
+      // Inward nasal friction puff
       const src = ctx.createBufferSource();
       src.buffer = this.pinkNoiseBuffer;
       src.loop = true;
 
       const bpf = ctx.createBiquadFilter();
       bpf.type = "bandpass";
-      bpf.Q.setValueAtTime(3.5, startTime);
-      bpf.frequency.setValueAtTime(320, startTime);
-      bpf.frequency.exponentialRampToValueAtTime(750, startTime + 0.05);
+      bpf.Q.setValueAtTime(4.2, startTime);
+      bpf.frequency.setValueAtTime(540, startTime);
+      bpf.frequency.exponentialRampToValueAtTime(1450, startTime + 0.045);
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, startTime);
-      gain.gain.linearRampToValueAtTime(0.35, startTime + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.055);
+      gain.gain.linearRampToValueAtTime(0.48, startTime + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.05);
 
       src.connect(bpf);
       bpf.connect(gain);
       gain.connect(this.masterGain!);
 
+      // Subtle vocal cord intake tick
+      const tick = ctx.createOscillator();
+      tick.type = "sine";
+      tick.frequency.setValueAtTime(280, startTime);
+      tick.frequency.exponentialRampToValueAtTime(420, startTime + 0.035);
+
+      const tickGain = ctx.createGain();
+      tickGain.gain.setValueAtTime(0.0001, startTime);
+      tickGain.gain.linearRampToValueAtTime(0.12, startTime + 0.004);
+      tickGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.038);
+
+      tick.connect(tickGain);
+      tickGain.connect(this.masterGain!);
+
       src.start(startTime);
-      src.stop(startTime + 0.065);
+      tick.start(startTime);
+      src.stop(startTime + 0.06);
+      tick.stop(startTime + 0.045);
     };
 
     const now = ctx.currentTime;
-    playPuff(now);
-    playPuff(now + 0.08);
+    playSniff(now);
+    playSniff(now + 0.095);
   }
 
   /**
