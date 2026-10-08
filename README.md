@@ -2,6 +2,8 @@
 
 A tiny interactive visual toy built for the **Dodo Payments** design engineer assignment.
 
+👉 **[Live Demo: sriram267.github.io/dodo-visual-toy](https://sriram267.github.io/dodo-visual-toy/)**
+
 ---
 
 ## What It Is
