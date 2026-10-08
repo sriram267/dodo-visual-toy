@@ -14,7 +14,7 @@ export const EditorialEssay: React.FC = () => {
         </h1>
 
         <p className="essay-byline">
-          A tiny visual toy for the Dodo Payments design engineer assignment.
+          Select any text below and press <kbd className="essay-kbd">Command + C</kbd> / <kbd className="essay-kbd">Ctrl + C</kbd> to swallow, then press <kbd className="essay-kbd">Command + V</kbd> or click the button to sneeze it back.
         </p>
       </header>
 
