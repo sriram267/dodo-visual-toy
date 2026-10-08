@@ -300,3 +300,19 @@
   transform-origin: 32px 21px;
 }
 
+/* ── Close Fold (Esc) Button in Top Right Header ── */
+.stash-close-fold-btn {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.stash-close-fold-btn:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
+.stash-close-fold-btn:active {
+  transform: scale(0.95) !important;
+}
+
+

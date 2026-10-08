@@ -826,8 +826,8 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </span>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>
-                  {swallowedSnippets.length > 0 ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                  {swallowedSnippets.length > 0 && (
                     <span
                       style={{
                         fontSize: "10px",
@@ -838,20 +838,41 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                         padding: "2px 8px",
                         borderRadius: "9999px",
                         lineHeight: 1.2,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {swallowedSnippets.length} held
                     </span>
-                  ) : (
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        backgroundColor: "rgba(255, 255, 255, 0.3)",
-                      }}
-                    />
                   )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateMode("notch");
+                    }}
+                    className="stash-close-fold-btn"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      background: "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.14)",
+                      borderRadius: "6px",
+                      padding: "2px 8px",
+                      color: "rgba(255, 255, 255, 0.70)",
+                      fontSize: "10px",
+                      fontFamily: "JetBrains Mono, monospace",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                      whiteSpace: "nowrap",
+                      userSelect: "none",
+                      lineHeight: "1.4",
+                    }}
+                    title="Close / Fold to Dynamic Island (Esc)"
+                  >
+                    close fold (esc)
+                  </button>
                 </div>
               </div>
 
@@ -945,7 +966,6 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   fontSize: "9.5px",
                   fontFamily: "JetBrains Mono, monospace",
                   color: "rgba(255, 255, 255, 0.38)",
@@ -954,7 +974,6 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 }}
               >
                 <span>Command + C / Ctrl + C copy • Command + V / Ctrl + V sneeze</span>
-                <span>esc fold</span>
               </div>
             </div>
           </div>
