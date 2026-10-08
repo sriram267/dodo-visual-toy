@@ -12,6 +12,7 @@ import {
 } from "../core/layout";
 import { Spring } from "../core/anim";
 import { IslandShape } from "./IslandShape";
+import { IslandParticles } from "./IslandParticles";
 import { TuskyAnchor, type TuskyExpression } from "./TuskyAnchor";
 import { soundEngine } from "../core/soundEngine";
 import type { SwallowedSnippet } from "../hooks/useSwallowText";
@@ -226,11 +227,15 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
     let targetH = NOTCH_H;
 
     if (status === "sneezing") {
-      targetW = 250;
-      targetH = NOTCH_H;
+      targetW = 276;
+      targetH = NOTCH_H + 4;
+    } else if (status === "ingesting") {
+      // Dynamic island expands smoothly while sucking in text
+      targetW = 284;
+      targetH = NOTCH_H + 6;
     } else if (sneezeWindupText) {
-      targetW = 250;
-      targetH = NOTCH_H;
+      targetW = 276;
+      targetH = NOTCH_H + 4;
     } else if (drySniffleText) {
       targetW = 270;
       targetH = NOTCH_H;
@@ -322,9 +327,9 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const cornerRadius = isExpanded ? EXPANDED_CORNER : isDizzyBanner ? 28 : currentH / 2;
 
   const badgeColor =
-    status === "ready"
+    status === "ready" || status === "ingesting"
       ? "#facc15"
-      : status === "ingesting" || status === "sneezing"
+      : status === "sneezing"
       ? "#34d399"
       : hasStash
       ? "#34d399"
@@ -352,7 +357,11 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
       <div
         ref={islandContainerRef}
         id="dynamic-island-container"
-        className={`relative pointer-events-auto island-wrapper ${isExpanded ? "island-expanded" : ""}`}
+        className={`relative pointer-events-auto island-wrapper ${
+          isExpanded ? "island-expanded" : ""
+        } ${status === "ingesting" ? "island-ingesting" : ""} ${
+          status === "sneezing" ? "island-sneezing" : ""
+        }`}
         style={{
           width: `${currentW}px`,
           height: `${currentH}px`,
@@ -374,7 +383,24 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
           isExpanded={isExpanded}
           isDocked={false}
           fill={ISLAND_COLORS.shell}
-          stroke={isHovered ? "rgba(255, 255, 255, 0.22)" : "rgba(255, 255, 255, 0.12)"}
+          stroke={
+            status === "ingesting"
+              ? "url(#island-ingest-rim)"
+              : status === "sneezing"
+              ? "url(#island-sneeze-rim)"
+              : isHovered
+              ? "rgba(255, 255, 255, 0.22)"
+              : "rgba(255, 255, 255, 0.12)"
+          }
+        />
+
+        {/* Procedural Particle System (Yellow Inward Suction / Green Outward Sneeze) */}
+        <IslandParticles
+          width={currentW}
+          height={currentH}
+          cornerRadius={cornerRadius}
+          status={status}
+          isExpanded={isExpanded}
         />
 
         {/* ── NOTCH MODE (184x40) / EXPRESSION BANNERS ── */}
@@ -667,8 +693,15 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       onClick={handleMascotClick}
                     />
                   </div>
-                  <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "-0.01em", color: "#ffffff" }}>
-                    Tusky
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.01em",
+                      color: status === "ingesting" ? "#fef08a" : "#ffffff",
+                    }}
+                  >
+                    {status === "ingesting" ? "Inhaling..." : "Tusky"}
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
@@ -677,17 +710,19 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       fontSize: "10px",
                       fontFamily: "JetBrains Mono, monospace",
                       color:
-                        status === "ready"
+                        status === "ingesting" || status === "ready"
                           ? "#facc15"
                           : hasStash
                           ? "#34d399"
                           : "rgba(255, 255, 255, 0.55)",
                       letterSpacing: "0.04em",
-                      fontWeight: status === "ready" || hasStash ? 600 : 400,
+                      fontWeight: status === "ingesting" || status === "ready" || hasStash ? 600 : 400,
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {status === "ready"
+                    {status === "ingesting"
+                      ? "● INGESTING"
+                      : status === "ready"
                       ? "⌘C / Ctrl+C"
                       : hasStash
                       ? "⌘V / Ctrl+V"

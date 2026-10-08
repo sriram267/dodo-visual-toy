@@ -92,6 +92,20 @@ export const IslandShape: React.FC<IslandShapeProps> = ({
           <stop offset="0%" stopColor="rgba(255, 255, 255, 0.22)" />
           <stop offset="100%" stopColor="rgba(255, 255, 255, 0.04)" />
         </linearGradient>
+
+        {/* Golden Ingestion Rim Highlight */}
+        <linearGradient id="island-ingest-rim" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(250, 204, 21, 0.45)" />
+          <stop offset="50%" stopColor="rgba(254, 240, 138, 0.95)" />
+          <stop offset="100%" stopColor="rgba(250, 204, 21, 0.45)" />
+        </linearGradient>
+
+        {/* Vibrant Emerald Sneeze Rim Highlight */}
+        <linearGradient id="island-sneeze-rim" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(52, 211, 153, 0.45)" />
+          <stop offset="50%" stopColor="rgba(134, 239, 172, 0.95)" />
+          <stop offset="100%" stopColor="rgba(52, 211, 153, 0.45)" />
+        </linearGradient>
       </defs>
 
       {/* Main black island body */}

@@ -49,6 +49,57 @@
     0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
+/* ── Dynamic Island Border Pulse & Shimmer on Ingest (Yellow) ── */
+@keyframes islandIngestShimmer {
+  0% {
+    box-shadow: 
+      0 0 0 1px rgba(250, 204, 21, 0.45),
+      0 0 14px rgba(250, 204, 21, 0.30),
+      0 0 28px rgba(250, 204, 21, 0.15),
+      inset 0 0 12px rgba(250, 204, 21, 0.18);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 1.5px rgba(254, 240, 138, 0.90),
+      0 0 24px rgba(250, 204, 21, 0.60),
+      0 0 46px rgba(250, 204, 21, 0.30),
+      inset 0 0 18px rgba(250, 204, 21, 0.30);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 1px rgba(250, 204, 21, 0.45),
+      0 0 14px rgba(250, 204, 21, 0.30),
+      0 0 28px rgba(250, 204, 21, 0.15),
+      inset 0 0 12px rgba(250, 204, 21, 0.18);
+  }
+}
+
+.island-wrapper.island-ingesting {
+  animation: islandIngestShimmer 1.1s infinite ease-in-out;
+}
+
+/* ── Sneeze Outward Emerald Burst Glow (Green) ── */
+@keyframes islandSneezeGlow {
+  0% {
+    box-shadow: 
+      0 0 0 1.5px rgba(52, 211, 153, 0.90),
+      0 0 24px rgba(52, 211, 153, 0.65),
+      0 0 48px rgba(52, 211, 153, 0.35),
+      inset 0 0 16px rgba(52, 211, 153, 0.25);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 1px rgba(52, 211, 153, 0),
+      0 0 6px rgba(52, 211, 153, 0),
+      0 0 12px rgba(52, 211, 153, 0),
+      inset 0 0 4px rgba(52, 211, 153, 0);
+  }
+}
+
+.island-wrapper.island-sneezing {
+  animation: islandSneezeGlow 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
