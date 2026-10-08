@@ -1,0 +1,251 @@
+/* Coucou & Apple Dynamic Island Glassmorphism & Contrast Styling */
+
+.island-wrapper {
+  position: relative;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  transform-origin: top center;
+  will-change: width, height, transform;
+  color: #ffffff;
+}
+
+/* Ensure text inside the black island ALWAYS remains glowing white */
+.island-wrapper,
+.island-wrapper * {
+  color: #ffffff;
+}
+
+.island-wrapper .text-muted {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.island-wrapper .text-secondary {
+  color: rgba(255, 255, 255, 0.70) !important;
+}
+
+.island-wrapper .text-primary {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.island-wrapper .text-emerald {
+  color: #34d399 !important;
+}
+
+.island-wrapper .text-indigo {
+  color: #a5b4fc !important;
+}
+
+.island-expanded {
+  border-radius: 28px;
+  box-shadow: 
+    0 24px 54px -10px rgba(0, 0, 0, 0.35),
+    0 10px 24px -6px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Tusky Expression Motion Keyframes ── */
+@keyframes tuskyHeadShake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-3.5px) rotate(-3.5deg); }
+  75% { transform: translateX(3.5px) rotate(3.5deg); }
+}
+
+@keyframes tuskyAngryJiggle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.05) translate(-1.5px, -1px) rotate(-2deg); }
+  40% { transform: scale(1.05) translate(1.5px, 1px) rotate(2deg); }
+  60% { transform: scale(1.03) translate(-1px, 1px) rotate(-1deg); }
+  80% { transform: scale(1.03) translate(1px, -1px) rotate(1deg); }
+}
+
+@keyframes tuskyDazedWobble {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes tuskySpiralSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tusky-anim-shake {
+  animation: tuskyHeadShake 0.42s infinite ease-in-out;
+  transform-origin: 32px 24px;
+}
+
+.tusky-anim-angry {
+  animation: tuskyAngryJiggle 0.28s infinite ease-in-out;
+  transform-origin: 32px 24px;
+}
+
+.tusky-anim-wobble {
+  animation: tuskyDazedWobble 1.6s infinite ease-in-out;
+  transform-origin: 32px 24px;
+}
+
+.tusky-anim-spin {
+  animation: tuskySpiralSpin 2.2s infinite linear;
+  transform-origin: 0 0;
+}
+
+/* ── Tusky Sneeze Kinematics ── */
+/* Mascot itself does NOT scale up (scale stays 1.0) — only tilts back on inhale and recoils forward */
+@keyframes tuskySneezeInhale {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  32% {
+    /* Head / mascot tilts back gently on inhale — ZERO scale increase on mascot itself */
+    transform: translate3d(0, -2px, 0) rotate(-2.5deg);
+  }
+  48% {
+    /* Max inhale tilt */
+    transform: translate3d(0, -3px, 0) rotate(-3.5deg);
+  }
+  68% {
+    /* Sneeze release snap forward & down */
+    transform: translate3d(0, 3px, 0) rotate(3deg);
+  }
+  85% {
+    /* Recoil bounce settle */
+    transform: translate3d(0, -0.5px, 0) rotate(-0.5deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.tusky-anim-sneeze {
+  animation: tuskySneezeInhale 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform-origin: bottom center;
+}
+
+/* Explicit trunk expansion during inhale before blow-out */
+@keyframes tuskyTrunkSwell {
+  0% {
+    transform: scale(1);
+  }
+  32% {
+    /* Trunk swells / gets bigger on inhale */
+    transform: scale(1.30, 1.22);
+  }
+  48% {
+    /* Trunk reaches maximum expansion right before blow-out */
+    transform: scale(1.48, 1.34);
+  }
+  68% {
+    /* Trunk compresses as air blasts out */
+    transform: scale(0.92, 0.88);
+  }
+  85% {
+    transform: scale(1.04, 1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tusky-anim-trunk-swell {
+  animation: tuskyTrunkSwell 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform-origin: 32px 21px;
+}
+
+/* Explicit backend and middle body inflation during sneeze inhale */
+@keyframes tuskyBackendExpand {
+  0% {
+    transform: scale(1);
+  }
+  32% {
+    /* Backend & middle belly expand on inhale */
+    transform: scale(1.36, 1.24) translate3d(0, -1.5px, 0);
+  }
+  48% {
+    /* Full deep breath: backend & middle swell dramatically */
+    transform: scale(1.52, 1.38) translate3d(0, -3px, 0);
+  }
+  68% {
+    /* Sneeze release snap */
+    transform: scale(0.86, 0.82) translate3d(0, 3px, 0);
+  }
+  85% {
+    transform: scale(1.04, 1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tusky-anim-backend-expand {
+  animation: tuskyBackendExpand 0.95s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform-origin: 32px 34px;
+}
+
+.tusky-clickable {
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
+}
+
+.tusky-clickable:hover {
+  filter: brightness(1.1);
+}
+
+.tusky-clickable:active {
+  transform: scale(0.92) !important;
+}
+
+/* ── Trunk Stash Snippet Rows ── */
+.stash-snippet-row {
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stash-snippet-row:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  transform: translateY(-0.5px);
+}
+
+.stash-snippet-row:hover .stash-sneeze-badge {
+  color: #34d399 !important;
+}
+
+.stash-snippet-row:active {
+  transform: scale(0.98) !important;
+}
+
+/* ── Idle Nudge: Gentle Trunk Wiggle (draws attention without spelling it out) ── */
+@keyframes tuskyTrunkWiggle {
+  0%   { transform: rotate(0deg) translateY(0); }
+  15%  { transform: rotate(6deg) translateY(-1px); }
+  35%  { transform: rotate(-5deg) translateY(0.5px); }
+  55%  { transform: rotate(4deg) translateY(-0.5px); }
+  75%  { transform: rotate(-2deg) translateY(0); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+
+.tusky-anim-idle-wiggle {
+  animation: tuskyTrunkWiggle 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform-origin: 32px 21px;
+}
+
