@@ -55,7 +55,17 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
   const [mode, setMode] = useState<IslandMode>(currentMode);
   const [mousePos, setMousePos] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const [isHovered, setIsHovered] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
   const hasStash = swallowedSnippets.length > 0;
+
+  // Track window resizing for seamless mobile responsiveness
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // ── Tusky Expression State Machine (Clicks 1, 2, 3) ──
   const [hitStreak, setHitStreak] = useState<number>(0);
@@ -223,37 +233,40 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
   // Set spring targets on mode change, expressions, sneeze banners, or subtle swallow nudge
   useEffect(() => {
+    const isSmallPhone = windowWidth < 440;
+    const maxIslandW = Math.max(200, windowWidth - 20);
+
     let targetW = NOTCH_W;
     let targetH = NOTCH_H;
 
     if (status === "sneezing") {
-      targetW = 276;
+      targetW = Math.min(276, maxIslandW);
       targetH = NOTCH_H + 4;
     } else if (status === "ingesting") {
       // Dynamic island expands smoothly while sucking in text
-      targetW = 284;
+      targetW = Math.min(284, maxIslandW);
       targetH = NOTCH_H + 6;
     } else if (sneezeWindupText) {
-      targetW = 276;
+      targetW = Math.min(276, maxIslandW);
       targetH = NOTCH_H + 4;
     } else if (drySniffleText) {
-      targetW = 270;
+      targetW = Math.min(270, maxIslandW);
       targetH = NOTCH_H;
     } else if (expression === "warning") {
-      targetW = 310;
+      targetW = Math.min(310, maxIslandW);
       targetH = NOTCH_H;
     } else if (expression === "angry") {
-      targetW = 260;
+      targetW = Math.min(260, maxIslandW);
       targetH = NOTCH_H;
     } else if (expression === "dizzy") {
-      targetW = 460;
-      targetH = 62;
+      targetW = Math.min(460, maxIslandW);
+      targetH = isSmallPhone ? 68 : 62;
     } else if (mode === "notch") {
-      targetW = status === "ready" || hasStash ? 256 : NOTCH_W;
+      targetW = Math.min(status === "ready" || hasStash ? 256 : NOTCH_W, maxIslandW);
       targetH = NOTCH_H;
     } else if (mode === "expanded") {
-      targetW = EXPANDED_W;
-      targetH = EXPANDED_H;
+      targetW = Math.min(EXPANDED_W, maxIslandW);
+      targetH = isSmallPhone ? 154 : EXPANDED_H;
     }
 
     // Subtle island breathe expansion during swallow (eases back on settle)
@@ -262,7 +275,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
     widthSpring.current.setTarget(targetW + nudgeW);
     heightSpring.current.setTarget(targetH + nudgeH);
-  }, [mode, isIslandNudged, expression, status, drySniffleText, sneezeWindupText, hasStash]);
+  }, [mode, isIslandNudged, expression, status, drySniffleText, sneezeWindupText, hasStash, windowWidth]);
 
   // 60fps Spring integration loop
   useEffect(() => {
@@ -335,16 +348,18 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
       ? "#34d399"
       : "rgba(255, 255, 255, 0.35)";
 
-  return (
+    const maxIslandW = Math.max(200, windowWidth - 20);
+
+    return (
     <div
-      className="fixed left-0 right-0 z-50 flex justify-center pointer-events-none select-none"
-      style={{ top: "10px" }}
+      className="fixed left-0 right-0 z-50 flex justify-center pointer-events-none select-none px-2"
+      style={{ top: "max(10px, env(safe-area-inset-top, 10px))" }}
     >
       {/* ── Coucou Wake Strip (click to expand) ── */}
       <div
         className="absolute -top-2.5 pointer-events-auto cursor-pointer"
         style={{
-          width: WAKE_STRIP_W,
+          width: Math.min(WAKE_STRIP_W, maxIslandW),
           height: WAKE_STRIP_H + 10,
           zIndex: 60,
         }}
@@ -363,9 +378,10 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
           status === "sneezing" ? "island-sneezing" : ""
         }`}
         style={{
-          width: `${currentW}px`,
+          width: `${Math.min(currentW, maxIslandW)}px`,
           height: `${currentH}px`,
           borderRadius: `${cornerRadius}px`,
+          maxWidth: "calc(100vw - 16px)",
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -503,13 +519,13 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
             ) : expression === "dizzy" ? (
               /* ── 3. DIZZY BANNER (1:1 IMAGE 2 PARITY) ── */
               <div
-                className="absolute inset-0 flex items-center px-4 animate-fade-in"
+                className="absolute inset-0 flex items-center animate-fade-in"
                 style={{
                   color: "#ffffff",
-                  padding: "0 18px",
+                  padding: windowWidth < 440 ? "0 12px" : "0 18px",
                   display: "flex",
                   alignItems: "center",
-                  gap: "14px",
+                  gap: windowWidth < 440 ? "8px" : "14px",
                   overflow: "visible",
                 }}
               >
@@ -540,11 +556,11 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 
                 {/* Right: Exact typography from Image 2 */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, textAlign: "left" }}>
-                  <span style={{ fontSize: "13.5px", fontWeight: 600, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+                  <span style={{ fontSize: windowWidth < 440 ? "12px" : "13.5px", fontWeight: 600, color: "#ffffff", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
                     Too many hits at once.
                   </span>
-                  <span style={{ fontSize: "11px", color: "rgba(255, 255, 255, 0.58)", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
-                    Give me a sec — back to work in three seconds.
+                  <span style={{ fontSize: windowWidth < 440 ? "9.5px" : "11px", color: "rgba(255, 255, 255, 0.58)", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+                    {windowWidth < 440 ? "Back to work in three seconds." : "Give me a sec — back to work in three seconds."}
                   </span>
                 </div>
               </div>
@@ -747,16 +763,16 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
           </>
         )}
 
-        {/* ── EXPANDED VIEW: THE TRUNK STASH (468x146) ── */}
+        {/* ── EXPANDED VIEW: THE TRUNK STASH ── */}
         {isExpanded && (
           <div
             className="absolute inset-0 flex items-center overflow-hidden animate-fade-in"
             style={{
               color: "#ffffff",
-              padding: "16px 24px 15px 20px",
+              padding: windowWidth < 440 ? "12px 14px 12px 12px" : "16px 24px 15px 20px",
               display: "flex",
               alignItems: "center",
-              gap: "18px",
+              gap: windowWidth < 440 ? "10px" : "18px",
             }}
           >
             {/* ── Left: Unboxed Tusky Mascot (Free in negative space) ── */}
@@ -765,7 +781,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
               onClick={handleMascotClick}
               className="tusky-clickable flex-shrink-0"
               style={{
-                width: "48px",
+                width: windowWidth < 440 ? "40px" : "48px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -776,7 +792,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
               title="Click Tusky"
             >
               <TuskyAnchor
-                diameter={48}
+                diameter={windowWidth < 440 ? 40 : 48}
                 expression={expression}
                 mousePos={mousePos}
                 targetPos={targetPos}
@@ -804,14 +820,14 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "8px",
+                  gap: "6px",
                   paddingRight: "2px",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
                   <span
                     style={{
-                      fontSize: "13px",
+                      fontSize: windowWidth < 440 ? "12px" : "13px",
                       fontWeight: 600,
                       color: "#ffffff",
                       letterSpacing: "-0.01em",
@@ -828,16 +844,16 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   </span>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
                   {swallowedSnippets.length > 0 && (
                     <span
                       style={{
-                        fontSize: "10px",
+                        fontSize: "9.5px",
                         fontWeight: 600,
                         color: "#34d399",
                         backgroundColor: "rgba(52, 211, 153, 0.14)",
                         border: "1px solid rgba(52, 211, 153, 0.28)",
-                        padding: "2px 8px",
+                        padding: "1.5px 6px",
                         borderRadius: "9999px",
                         lineHeight: 1.2,
                         whiteSpace: "nowrap",
@@ -861,9 +877,9 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       background: "rgba(255, 255, 255, 0.08)",
                       border: "1px solid rgba(255, 255, 255, 0.14)",
                       borderRadius: "6px",
-                      padding: "2px 8px",
+                      padding: "2px 7px",
                       color: "rgba(255, 255, 255, 0.70)",
-                      fontSize: "10px",
+                      fontSize: "9.5px",
                       fontFamily: "JetBrains Mono, monospace",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
@@ -873,7 +889,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     }}
                     title="Close / Fold to Dynamic Island (Esc)"
                   >
-                    close fold (esc)
+                    {windowWidth < 440 ? "✕ close" : "close fold (esc)"}
                   </button>
                 </div>
               </div>
@@ -883,13 +899,13 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px",
+                  gap: windowWidth < 440 ? "6px" : "8px",
                 }}
               >
                 {swallowedSnippets.length === 0 ? (
                   <div
                     style={{
-                      padding: "8px 12px",
+                      padding: windowWidth < 440 ? "6px 8px" : "8px 12px",
                       borderRadius: "8px",
                       border: "1px dashed rgba(255, 255, 255, 0.12)",
                       backgroundColor: "rgba(255, 255, 255, 0.02)",
@@ -900,12 +916,14 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                   >
                     <span
                       style={{
-                        fontSize: "11px",
+                        fontSize: windowWidth < 440 ? "10px" : "11px",
                         color: "rgba(255, 255, 255, 0.45)",
                         letterSpacing: "-0.01em",
                       }}
                     >
-                      Select text on page & press Command + C / Ctrl + C to copy
+                      {windowWidth < 440
+                        ? "Select text & copy to add"
+                        : "Select text on page & press Command + C / Ctrl + C to copy"}
                     </span>
                   </div>
                 ) : (
@@ -914,14 +932,14 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       key={item.id}
                       className="stash-snippet-row"
                       style={{
-                        padding: "6px 12px",
+                        padding: windowWidth < 440 ? "5px 9px" : "6px 12px",
                         borderRadius: "8px",
                         backgroundColor: "rgba(255, 255, 255, 0.06)",
                         border: "1px solid rgba(255, 255, 255, 0.09)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        gap: "10px",
+                        gap: "8px",
                         cursor: "pointer",
                         transition: "all 0.15s ease",
                       }}
@@ -936,7 +954,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                     >
                       <span
                         style={{
-                          fontSize: "11.5px",
+                          fontSize: windowWidth < 440 ? "10.5px" : "11.5px",
                           color: "rgba(255, 255, 255, 0.88)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -950,7 +968,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                       <span
                         className="stash-sneeze-badge"
                         style={{
-                          fontSize: "9.5px",
+                          fontSize: "9px",
                           fontFamily: "JetBrains Mono, monospace",
                           color: "rgba(255, 255, 255, 0.42)",
                           flexShrink: 0,
@@ -968,14 +986,18 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  fontSize: "9.5px",
+                  fontSize: windowWidth < 440 ? "8.5px" : "9.5px",
                   fontFamily: "JetBrains Mono, monospace",
                   color: "rgba(255, 255, 255, 0.38)",
                   letterSpacing: "0.02em",
                   paddingRight: "2px",
                 }}
               >
-                <span>Command + C / Ctrl + C copy • Command + V / Ctrl + V sneeze</span>
+                <span>
+                  {windowWidth < 440
+                    ? "tap snippet to return • copy to add"
+                    : "Command + C / Ctrl + C copy • Command + V / Ctrl + V sneeze"}
+                </span>
               </div>
             </div>
           </div>

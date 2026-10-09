@@ -315,4 +315,20 @@
   transform: scale(0.95) !important;
 }
 
+/* ── Mobile viewport protection for Island ── */
+.island-wrapper {
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .island-expanded {
+    border-radius: 24px;
+    box-shadow: 
+      0 16px 36px -8px rgba(0, 0, 0, 0.4),
+      0 6px 16px -4px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.14);
+  }
+}
+
 

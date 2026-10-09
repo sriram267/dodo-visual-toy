@@ -58,8 +58,8 @@ export const KeyboardShortcutIndicator: React.FC<KeyboardShortcutIndicatorProps>
         {hasSelection ? (
           /* ── 1. Text Selected: Teach Command + C / Ctrl + C Copy to Notch ── */
           <>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="hud-desktop-keys flex items-center gap-1 shrink-0">
                 <kbd className="hud-keycap">Command + C</kbd>
                 <span className="hud-key-divider">/</span>
                 <kbd className="hud-keycap">Ctrl + C</kbd>
@@ -70,13 +70,13 @@ export const KeyboardShortcutIndicator: React.FC<KeyboardShortcutIndicatorProps>
                   Copy{" "}
                   {selectedPreview ? (
                     <span className="hud-preview-text">
-                      “{selectedPreview.trim().replace(/^[“"']+|[”"']+$/g, "").slice(0, 20)}
-                      {selectedPreview.trim().length > 20 ? "…" : ""}”
+                      “{selectedPreview.trim().replace(/^[“"']+|[”"']+$/g, "").slice(0, 18)}
+                      {selectedPreview.trim().length > 18 ? "…" : ""}”
                     </span>
                   ) : (
                     "selection"
                   )}{" "}
-                  to notch
+                  <span className="hud-to-notch-text">to notch</span>
                 </span>
               </div>
             </div>
@@ -98,15 +98,16 @@ export const KeyboardShortcutIndicator: React.FC<KeyboardShortcutIndicatorProps>
         ) : (
           /* ── 2. After Swallow: Teach Command + V / Ctrl + V Sneeze Back ── */
           <>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="hud-desktop-keys flex items-center gap-1 shrink-0">
                 <kbd className="hud-keycap-emerald">Command + V</kbd>
                 <span className="hud-key-divider-emerald">/</span>
                 <kbd className="hud-keycap-emerald">Ctrl + V</kbd>
               </div>
 
               <div className="hud-feed-label">
-                <span>Press to sneeze words back</span>
+                <span className="hud-sneeze-text-desktop">Press to sneeze words back</span>
+                <span className="hud-sneeze-text-mobile">Tap to sneeze back</span>
               </div>
             </div>
 

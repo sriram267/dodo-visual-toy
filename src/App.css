@@ -309,4 +309,108 @@
   flex-shrink: 0;
 }
 
+.hud-desktop-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.hud-sneeze-text-desktop {
+  display: inline;
+}
+
+.hud-sneeze-text-mobile {
+  display: none;
+}
+
+.hud-to-notch-text {
+  display: inline;
+}
+
+/* ── Mobile Responsiveness for Dynamic Island Stage & Floating HUD ── */
+@media (max-width: 640px) {
+  .stage-container {
+    padding: 4.5rem 0.75rem 1.5rem;
+    overflow-x: hidden;
+  }
+
+  .editorial-essay-container {
+    padding: 1.25rem 1rem 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .essay-headline {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+
+  .essay-byline {
+    font-size: 0.88rem;
+  }
+
+  /* Hide physical desktop keyboard caps on mobile touch screens */
+  .hud-desktop-keys {
+    display: none !important;
+  }
+
+  .hud-sneeze-text-desktop {
+    display: none !important;
+  }
+
+  .hud-sneeze-text-mobile {
+    display: inline !important;
+  }
+
+  /* Keep HUD strictly within mobile viewport and above bottom safe area */
+  .floating-shortcut-hud {
+    bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
+    max-width: calc(100vw - 20px);
+    width: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(14px);
+    box-sizing: border-box;
+  }
+
+  .floating-shortcut-hud.visible {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .shortcut-hud-pill {
+    padding: 0.42rem 0.7rem;
+    gap: 0.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .hud-feed-label {
+    font-size: 11.5px;
+    min-width: 0;
+  }
+
+  .hud-preview-text {
+    max-width: 96px;
+    display: inline-block;
+    vertical-align: bottom;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hud-action-btn {
+    padding: 0.28rem 0.6rem;
+    font-size: 10.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  .hud-to-notch-text {
+    display: none;
+  }
+
+  .hud-preview-text {
+    max-width: 75px;
+  }
+}
+
 
